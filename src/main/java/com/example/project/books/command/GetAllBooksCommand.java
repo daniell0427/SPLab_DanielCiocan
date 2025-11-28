@@ -1,19 +1,19 @@
 package com.example.project.books.command;
 
-import com.example.project.books.service.BooksService;
-
+import com.example.project.Book;
+import com.example.project.persistence.CrudRepository;
 import java.util.List;
 
-public class GetAllBooksCommand implements Command<List<String>> {
+public class GetAllBooksCommand implements Command {
 
-    private final BooksService booksService;
+    private final CrudRepository<Book, Integer> repo;
 
-    public GetAllBooksCommand(BooksService service) {
-        this.booksService = service;
+    public GetAllBooksCommand(CrudRepository<Book, Integer> repo) {
+        this.repo = repo;
     }
 
     @Override
-    public List<String> execute() {
-        return booksService.getAll();
+    public Object execute() {
+        return repo.findAll();
     }
 }

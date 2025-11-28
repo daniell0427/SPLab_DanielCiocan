@@ -1,12 +1,32 @@
 package com.example.project;
 
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class Book implements Element {
-    private final String title;
-    private final List<Author> authors = new ArrayList<>();
-    private final List<Element> contents = new ArrayList<>();
+@Entity
+public class Book {
+
+    @Setter
+    @Getter
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Setter
+    @Getter
+    private String title;
+
+    @ManyToMany(cascade = CascadeType.ALL)
+    private List<Author> authors = new ArrayList<>();
+
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<Section> element = new ArrayList<>();
+
+    public Book() {}
 
     public Book(String title) {
         this.title = title;
@@ -16,17 +36,13 @@ public class Book implements Element {
         authors.add(a);
     }
 
-    public void addContent(Element e) {
-        contents.add(e);
+    public void addContent(Section s) {
+        element.add(s);
     }
 
     public void print() {
-        System.out.println("Book: " + title + '\n');
-        System.out.println("Authors:");
-        for (Author a : authors)
-            a.print();
-        System.out.println("\n");
-        for (Element e : contents)
-            e.print();
+        System.out.println("Book: " + title);
+        authors.forEach(Author::print);
+        element.forEach(Section::print);
     }
 }

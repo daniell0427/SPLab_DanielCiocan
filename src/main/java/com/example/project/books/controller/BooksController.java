@@ -1,23 +1,31 @@
-package com.example.books.web;
+package com.example.project.books.controller;
 
 import com.example.project.books.async.*;
 import com.example.project.books.command.*;
 import com.example.project.books.command.executors.AsyncCommandExecutor;
-import com.example.project.books.service.BooksService;
+import com.example.project.persistence.CrudRepository;
+import com.example.project.Book;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/books")
+import com.example.project.observer.AllBooksSubject;
+import com.example.project.Book;
+
 public class BooksController {
 
-    private final BooksService booksService;
+    private final CrudRepository<Book, Integer> repo;
     private final AsyncCommandExecutor asyncExecutor;
+    private final AllBooksSubject allBooksSubject;
 
-    public BooksController(BooksService booksService,
-                           AsyncCommandExecutor asyncExecutor) {
-        this.booksService = booksService;
+    public BooksController(CrudRepository<Book, Integer> repo,
+                           AsyncCommandExecutor asyncExecutor,
+                           AllBooksSubject allBooksSubject) {
+        this.repo = repo;
         this.asyncExecutor = asyncExecutor;
+        this.allBooksSubject = allBooksSubject;
     }
 
     // ---------- Synchronous endpoints ----------
@@ -25,14 +33,14 @@ public class BooksController {
     @GetMapping
     public ResponseEntity<?> getAll() {
         return ResponseEntity.ok(
-                new GetAllBooksCommand(booksService).execute()
+                new GetAllBooksCommand(repo).execute()
         );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable int id) {
         return ResponseEntity.ok(
-                new GetBookCommand(booksService, id).execute()
+                new GetBookCommand(repo, id).execute()
         );
     }
 
@@ -40,31 +48,38 @@ public class BooksController {
     public ResponseEntity<?> update(@PathVariable int id,
                                     @RequestBody String title) {
         return ResponseEntity.ok(
-                new UpdateBookCommand(booksService, id, title).execute()
+                new UpdateBookCommand(repo, id, title).execute()
         );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable int id) {
         return ResponseEntity.ok(
-                new DeleteBookCommand(booksService, id).execute()
+                new DeleteBookCommand(repo, id).execute()
         );
     }
 
     // ---------- Asynchronous processing example ----------
 
-    @PostMapping
+    @PostMapping("/async")
     public ResponseEntity<String> addAsync(@RequestBody String title) {
-        AddBookCommand cmd = new AddBookCommand(booksService, title);
+        AddBookCommand cmd = new AddBookCommand(repo, title);
         String requestId = asyncExecutor.submit(cmd);
         return ResponseEntity.accepted().body(requestId);
     }
 
+    @PostMapping
+    public ResponseEntity<String> newBook(@RequestBody String title) {
+        Book book = new Book(title);
+        book = repo.save(book);
+        allBooksSubject.add(book);
+        return ResponseEntity.ok("Book saved [" + book.getId() + "] " + book.getTitle());
+    }
 
     @GetMapping("/async/{requestId}")
     public ResponseEntity<AsyncResponse> getAsyncStatus(@PathVariable String requestId) {
-        AsyncStatus status = asyncExecutor.getStatus(requestId);
 
+        AsyncStatus status = asyncExecutor.getStatus(requestId);
         if (status == null) {
             return ResponseEntity.notFound().build();
         }
@@ -76,7 +91,7 @@ public class BooksController {
                 requestId,
                 status,
                 result,
-                (error != null) ? error.getMessage() : null
+                error != null ? error.getMessage() : null
         );
 
         return ResponseEntity.ok(dto);

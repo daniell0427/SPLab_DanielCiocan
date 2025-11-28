@@ -1,20 +1,20 @@
 package com.example.project.books.command;
 
-import com.example.project.books.service.BooksService;
+import com.example.project.Book;
+import com.example.project.persistence.CrudRepository;
 
-public class GetBookCommand implements Command<String> {
+public class GetBookCommand implements Command {
 
-    private final BooksService booksService;
+    private final CrudRepository<Book, Integer> repo;
     private final int id;
 
-    public GetBookCommand(BooksService service, int id) {
-        this.booksService = service;
+    public GetBookCommand(CrudRepository<Book, Integer> repo, int id) {
+        this.repo = repo;
         this.id = id;
     }
 
     @Override
-    public String execute() {
-        return booksService.getById(id);
+    public Object execute() {
+        return repo.findById(id);
     }
 }
-

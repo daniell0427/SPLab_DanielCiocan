@@ -1,20 +1,27 @@
 package com.example.project;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
+import lombok.Getter;
 import lombok.Setter;
 
-public class Paragraph implements Element {
-    private final String text;
+@Entity
+public class Paragraph extends Element {
+
+    @Getter
+    private String text;
+
     @Setter
+    @Transient
     private AlignStrategy alignStrategy;
+
+    public Paragraph() {}
 
     public Paragraph(String text) {
         this.text = text;
     }
 
-    String getText() {
-        return text;
-    }
-
+    @Override
     public void print() {
         if (alignStrategy != null)
             alignStrategy.render(this);
